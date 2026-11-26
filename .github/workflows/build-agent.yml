@@ -1,0 +1,38 @@
+name: Build AirSimHub Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Agent version
+        type: string
+        default: 'dev'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Check source
+        run: sh scripts/check.sh
+      - name: Build Linux ARM64 agent
+        run: sh scripts/build-agent.sh "$VERSION"
+      - name: Package build output
+        run: tar -C build -czf airsimhub-agent-arm64.tar.gz .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: airsimhub-agent-arm64
+          path: airsimhub-agent-arm64.tar.gz
+          if-no-files-found: error
